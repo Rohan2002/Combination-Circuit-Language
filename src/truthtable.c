@@ -1,29 +1,15 @@
+/*
+    Author: Rohan Deshpande
+    Date: November 25, 2021
+
+    Digital Logic Lab
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
-
-typedef enum
-{
-    AND,
-    OR,
-    NAND,
-    NOR,
-    XOR,
-    NOT,
-    PASS,
-    DECODER,
-    MULTIPLEXER
-} kind_t;
-
-struct gate
-{
-    kind_t kind;
-    int size;    // indicates size of DECODER and MULTIPLEXER
-    int *params; // length determined by kind and size;
-    // includes inputs and outputs, indicated by variable numbers
-};
 
 struct TableNode
 {
@@ -33,6 +19,17 @@ struct TableNode
 };
 typedef struct TableNode TabNode;
 
+void free_list(struct TableNode *main_list)
+{
+    struct TableNode *temp;
+
+    while (main_list != NULL)
+    {
+        temp = main_list;
+        main_list = main_list->next;
+        free(temp);
+    }
+}
 void print_list(TabNode *main_list)
 {
     TabNode *pointer_main_list = main_list;
@@ -79,6 +76,15 @@ TabNode **create_table(int max_size)
         table[i] = NULL;
     }
     return table;
+}
+void free_table(TabNode **table, int max_size)
+{
+    for (int i = 0; i < max_size; i++)
+    {   
+        // free_list(table[i]->next);
+        free(table[i]);
+    }
+    free(table);
 }
 int hash_value(char *str)
 {
@@ -370,21 +376,23 @@ int main(int argc, char **argv)
                 read_variable(string_decoder_input_length, file_pointer_circuit);
 
                 int decoder_input_size = atoi(string_decoder_input_length);
-                char **n_input_circuits = (char **)malloc(sizeof(char *) * decoder_input_size); // free
+                char **n_input_circuits = (char **)malloc(sizeof(char *) * decoder_input_size);
                 int sum_binary = 0;
                 for (int i = decoder_input_size - 1; i >= 0; i--)
                 {
-                    n_input_circuits[i] = (char *)malloc(sizeof(char) * 17); // free
+                    n_input_circuits[i] = (char *)malloc(sizeof(char) * 17);
 
                     read_variable(n_input_circuits[i], file_pointer_circuit);
                     int binary_value = index_table_by_string(table, n_input_circuits[i]);
                     sum_binary += (((int)pow(2, i)) * binary_value);
+
+                    free(n_input_circuits[i]);
                 }
                 int decoder_output_size = (int)pow(2, decoder_input_size);
-                char **n_output_circuits = (char **)malloc(sizeof(char *) * decoder_output_size); // free
+                char **n_output_circuits = (char **)malloc(sizeof(char *) * decoder_output_size); 
                 for (int j = 0; j < decoder_output_size; j++)
                 {
-                    n_output_circuits[j] = (char *)malloc(sizeof(char) * 17); // free
+                    n_output_circuits[j] = (char *)malloc(sizeof(char) * 17);
                     read_variable(n_output_circuits[j], file_pointer_circuit);
 
                     if (j == sum_binary)
@@ -395,7 +403,12 @@ int main(int argc, char **argv)
                     {
                         update_table_by_string(table, n_output_circuits[j], false);
                     }
+                    // free(n_output_circuits[j]);
                 }
+
+                free(n_input_circuits);
+                //free(n_output_circuits);
+                // free_char_array(n_output_circuits, decoder_output_size);
             }
             else if (strcmp(circuit_string, "MULTIPLEXER") == 0)
             {
@@ -405,8 +418,8 @@ int main(int argc, char **argv)
                 int selector_input_size = atoi(string_multiplexer_selector_length);
                 int multiplexer_input_size = (int)pow(2, selector_input_size);
 
-                char **n_input_circuits = (char **)malloc(sizeof(char *) * multiplexer_input_size); // free
-                char **n_selector_circuits = (char **)malloc(sizeof(char *) * selector_input_size); // free
+                char **n_input_circuits = (char **)malloc(sizeof(char *) * multiplexer_input_size); 
+                char **n_selector_circuits = (char **)malloc(sizeof(char *) * selector_input_size);
 
                 for (int i = 0; i < multiplexer_input_size; i++)
                 {
@@ -416,7 +429,7 @@ int main(int argc, char **argv)
                 int base_10_selector_value = 0;
                 for (int j = selector_input_size - 1; j >= 0; j--)
                 {
-                    n_selector_circuits[j] = (char *)malloc(sizeof(char) * 17); // free
+                    n_selector_circuits[j] = (char *)malloc(sizeof(char) * 17);
                     read_variable(n_selector_circuits[j], file_pointer_circuit);
 
                     int binary_value = index_table_by_string(table, n_selector_circuits[j]);
@@ -424,12 +437,16 @@ int main(int argc, char **argv)
                 }
 
                 // printf("The binary base-10 is %d\n", base_10_selector_value);
-                char *decoder_output_circuits = (char *)malloc(sizeof(char) * 17); // free
+                char *decoder_output_circuits = (char *)malloc(sizeof(char) * 17);
                 read_variable(decoder_output_circuits, file_pointer_circuit);
 
                 int binary_value = index_table_by_string(table, n_input_circuits[base_10_selector_value]);
                 bool binary_rep = binary_value == 1 ? true : false;
                 update_table_by_string(table, decoder_output_circuits, binary_rep); // update output variable and it's binary number with bitwise_op
+                
+                free(decoder_output_circuits);
+                free_char_array(n_input_circuits, multiplexer_input_size);
+                free_char_array(n_selector_circuits, selector_input_size);
             }
         }
         for (int n_i = 0; n_i < num_inputs; n_i++)
@@ -444,11 +461,14 @@ int main(int argc, char **argv)
             printf(" %d", output_binary_value);
         }
         printf("\n");
-        if(fseek(file_pointer_circuit, 0L, SEEK_SET) != 0){
+        if (fseek(file_pointer_circuit, 0L, SEEK_SET) != 0)
+        {
             printf("%s\n", "Couldn't read the file at the given location!");
             return EXIT_FAILURE;
         }
     }
+
+    free_table(table, max_size);
 }
 
 // handle circuit output
