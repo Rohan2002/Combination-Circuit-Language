@@ -80,9 +80,8 @@ TabNode **create_table(int max_size)
 void free_table(TabNode **table, int max_size)
 {
     for (int i = 0; i < max_size; i++)
-    {   
-        // free_list(table[i]->next);
-        free(table[i]);
+    {
+        free_list(table[i]);
     }
     free(table);
 }
@@ -139,7 +138,7 @@ void update_table_by_string(TabNode **table, char *index_str, bool binary_value)
 
         TabNode *temp = table[hash];
         TabNode *prev = table[hash];
-        while (temp != NULL)
+        while (!found_string && temp != NULL)
         {
             if (strcmp(index_str, temp->str) == 0)
             {
@@ -230,7 +229,7 @@ bool *generate_boolean_permutation(int num_inputs, int row)
 int main(int argc, char **argv)
 {
     int max_size = 16 * 255;                  // since each variable has atmost 16 characters, and the max ascii is 255 then the max hash value can be 255+255+255...+255 = 255 * 16
-    TabNode **table = create_table(max_size); // TODO: free this table at the end
+    TabNode **table = create_table(max_size);
 
     // handle file i/o here
     FILE *file_pointer_circuit = fopen(argv[1], "r");
@@ -249,7 +248,7 @@ int main(int argc, char **argv)
         read_variable(input_string, file_pointer_circuit);
         num_inputs = atoi(input_string); // reads the number of inputs
     }
-    char **input_strs = (char **)malloc(sizeof(char *) * num_inputs); // TODO: free this shit... this is a string array for storing multiple strings
+    char **input_strs = (char **)malloc(sizeof(char *) * num_inputs);
     char **output_strs;
     int num_outputs = 0;
 
@@ -340,6 +339,7 @@ int main(int argc, char **argv)
 
                 update_table_by_string(table, one_output_circuits, biwise_op); // updates the output variable's binary value with the correct bitwise_op
 
+                // free(one_output_circuits);
                 free_char_array(two_input_circuits, 2); // free the input variable array of the circuit instruction.
             }
             else if (strcmp(circuit_string, "NOT") == 0 || strcmp(circuit_string, "PASS") == 0)
@@ -369,6 +369,7 @@ int main(int argc, char **argv)
                 update_table_by_string(table, one_output_circuits, bitwise_op); // update output variable and it's binary number with bitwise_op
 
                 free(one_input_circuits);
+                // free(one_output_circuits);
             }
             else if (strcmp(circuit_string, "DECODER") == 0)
             {
@@ -389,7 +390,7 @@ int main(int argc, char **argv)
                     free(n_input_circuits[i]);
                 }
                 int decoder_output_size = (int)pow(2, decoder_input_size);
-                char **n_output_circuits = (char **)malloc(sizeof(char *) * decoder_output_size); 
+                char **n_output_circuits = (char **)malloc(sizeof(char *) * decoder_output_size);
                 for (int j = 0; j < decoder_output_size; j++)
                 {
                     n_output_circuits[j] = (char *)malloc(sizeof(char) * 17);
@@ -405,10 +406,9 @@ int main(int argc, char **argv)
                     }
                     // free(n_output_circuits[j]);
                 }
-
+                
+                // free(n_output_circuits);
                 free(n_input_circuits);
-                //free(n_output_circuits);
-                // free_char_array(n_output_circuits, decoder_output_size);
             }
             else if (strcmp(circuit_string, "MULTIPLEXER") == 0)
             {
@@ -418,7 +418,7 @@ int main(int argc, char **argv)
                 int selector_input_size = atoi(string_multiplexer_selector_length);
                 int multiplexer_input_size = (int)pow(2, selector_input_size);
 
-                char **n_input_circuits = (char **)malloc(sizeof(char *) * multiplexer_input_size); 
+                char **n_input_circuits = (char **)malloc(sizeof(char *) * multiplexer_input_size);
                 char **n_selector_circuits = (char **)malloc(sizeof(char *) * selector_input_size);
 
                 for (int i = 0; i < multiplexer_input_size; i++)
@@ -443,10 +443,10 @@ int main(int argc, char **argv)
                 int binary_value = index_table_by_string(table, n_input_circuits[base_10_selector_value]);
                 bool binary_rep = binary_value == 1 ? true : false;
                 update_table_by_string(table, decoder_output_circuits, binary_rep); // update output variable and it's binary number with bitwise_op
-                
-                free(decoder_output_circuits);
-                free_char_array(n_input_circuits, multiplexer_input_size);
+            
+                free_char_array(n_input_circuits,multiplexer_input_size);
                 free_char_array(n_selector_circuits, selector_input_size);
+
             }
         }
         for (int n_i = 0; n_i < num_inputs; n_i++)
@@ -467,8 +467,9 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
     }
-
     free_table(table, max_size);
+    free_char_array(input_strs, num_inputs);
+    free_char_array(output_strs, num_outputs);
 }
 
 // handle circuit output
