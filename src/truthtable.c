@@ -70,7 +70,7 @@ void free_char_array(char **free_char_array, int row)
 TabNode **create_table(int max_size)
 {
     /*
-        Create a table from a 1-d array.
+        Create a table.
         KEY :: int : The sum of the ascii value of the string
         VALUE :: TableNode :Linked list of type TableNode
     */
@@ -102,7 +102,7 @@ void add_to_table(TabNode **table, char *add_str, bool binary_value)
 {
     /*
         For a unique ascii hash key U_K, create a new linked-list at that U_K and put the new string as a node in that new linked list.
-        For a non-unique ascii hash key U_K, Update the exisiing linked-list at that place and append the node to the end of linked list.
+        For a non-unique ascii hash key U_K, Update the exisiing linked-list at that place by appending the node to the end of linked list.
     */
     int hash = hash_value(add_str);
 
@@ -116,73 +116,46 @@ void add_to_table(TabNode **table, char *add_str, bool binary_value)
     else
     {
         TabNode *temp_table = table[hash];
-        bool found_string = false;
         while (temp_table->next != NULL)
         {
-            if (strcmp(add_str, temp_table->str) == 0)
-            {
-                temp_table->val = binary_value;
-                found_string = true;
-                break;
-            }
             temp_table = temp_table->next;
         }
-        if (!found_string)
-        {
-            temp_table->next = malloc(sizeof(TabNode));
-            temp_table->next->str = add_str;
-            temp_table->next->val = binary_value;
-            temp_table->next->next = NULL;
-        }
+        temp_table->next = malloc(sizeof(TabNode));
+        temp_table->next->str = add_str;
+        temp_table->next->val = binary_value;
+        temp_table->next->next = NULL;
     }
 }
 void update_table_by_string(TabNode **table, char *index_str, bool binary_value)
 {
     /*
-        This method will add node to the hash-table based on the input strings hash value.
-        Method can handle duplicate variables and just update their new binary value, new variables that doesn't have a hash-key table and
-        new variables that share the same hash-key as other variables but has a different name (aka collison).
+        This method will update node to the hash-table based on the input strings hash value.
+        Since add_to_table is called before update, we can assume that all variables in the file exist in the table.
+
+        Hence then we could can compare a variable at its hash by going through the linked list, and once we find
+        the correct string then we can just update that node's binary_val value. 
     */
     int hash = hash_value(index_str);
 
-    // New variables that doesn't have a hash-key table
-    if (table[hash] == NULL)
-    {
-        table[hash] = malloc(sizeof(TabNode));
-        table[hash]->str = index_str;
-        table[hash]->val = binary_value;
-        table[hash]->next = NULL;
-    }
-    else
-    {
-        // Method can handle duplicate variables and just update their new binary value
-        bool found_string = false;
+    bool found_string = false;
 
-        TabNode *temp = table[hash];
-        TabNode *prev = table[hash];
-        while (!found_string && temp != NULL)
+    TabNode *temp = table[hash];
+    while (!found_string && temp != NULL)
+    {
+        if (strcmp(index_str, temp->str) == 0)
         {
-            if (strcmp(index_str, temp->str) == 0)
-            {
-                found_string = true;
-                temp->val = binary_value;
-            }
-            prev = temp;
-            temp = temp->next;
-        }
-        // New variables that share the same hash-key as other variables but has a different name (aka collison)
-        if (!found_string)
-        {
-            prev->next = malloc(sizeof(TabNode));
-            prev->next->str = index_str;
-            prev->next->val = binary_value;
-            prev->next->next = NULL;
             found_string = true;
+            temp->val = binary_value;
         }
+        temp = temp->next;
     }
 }
 int index_table_by_string(TabNode **table, char *index_str)
 {
+    /*
+        This method will index the table for the given string and return the binary value at that located node.
+        If node is not found then -1 is returned.
+    */
     int hash = hash_value(index_str);
     if (table[hash] == NULL)
     {
@@ -503,9 +476,11 @@ int main(int argc, char **argv)
             printf("%s\n", "Couldn't read the file at the given location!");
             return EXIT_FAILURE;
         }
+        
     }
     free_table(table, max_size);
 
+    
     free(input_strs);
     free(output_strs);
 }

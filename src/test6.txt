@@ -7,4 +7,15 @@ MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   IN9 IN10 IN11 IN12        temp
 MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   IN13 IN14 IN15 IN16       temp4
 MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   IN17 IN18 IN19 IN20       temp5
 MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp1 temp2 temp3 temp4   temp6
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
+MULTIPLEXER 4   0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1   temp6 temp4 temp2 temp1   temp8
 MULTIPLEXER 2   0 1 0 1                           temp5 temp6               OUT1
