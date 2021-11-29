@@ -27,19 +27,23 @@ void free_list(struct TableNode *main_list)
     {
         temp = main_list;
         main_list = main_list->next;
+        free(temp->str);
         free(temp);
     }
 }
 void print_list(TabNode *main_list)
 {
     TabNode *pointer_main_list = main_list;
+    if (pointer_main_list == NULL)
+    {
+        printf("List is empty!");
+    }
     while (pointer_main_list != NULL)
     {
         int binary_val = pointer_main_list->val ? 1 : 0;
         printf("Variable: %s, Binary: %d", pointer_main_list->str, binary_val);
         pointer_main_list = pointer_main_list->next;
     }
-    free(pointer_main_list);
     printf("\n");
 }
 void print_table(TabNode **table, int size)
@@ -99,8 +103,6 @@ void add_to_table(TabNode **table, char *add_str, bool binary_value)
     /*
         For a unique ascii hash key U_K, create a new linked-list at that U_K and put the new string as a node in that new linked list.
         For a non-unique ascii hash key U_K, Update the exisiing linked-list at that place and append the node to the end of linked list.
-
-        TODO: Maybe handle adding duplicate variables?
     */
     int hash = hash_value(add_str);
 
@@ -114,26 +116,46 @@ void add_to_table(TabNode **table, char *add_str, bool binary_value)
     else
     {
         TabNode *temp_table = table[hash];
+        bool found_string = false;
         while (temp_table->next != NULL)
         {
+            if (strcmp(add_str, temp_table->str) == 0)
+            {
+                temp_table->val = binary_value;
+                found_string = true;
+                break;
+            }
             temp_table = temp_table->next;
         }
-        temp_table->next = malloc(sizeof(TabNode));
-        temp_table->next->str = add_str;
-        temp_table->next->val = binary_value;
-        temp_table->next->next = NULL;
+        if (!found_string)
+        {
+            temp_table->next = malloc(sizeof(TabNode));
+            temp_table->next->str = add_str;
+            temp_table->next->val = binary_value;
+            temp_table->next->next = NULL;
+        }
     }
 }
 void update_table_by_string(TabNode **table, char *index_str, bool binary_value)
 {
+    /*
+        This method will add node to the hash-table based on the input strings hash value.
+        Method can handle duplicate variables and just update their new binary value, new variables that doesn't have a hash-key table and
+        new variables that share the same hash-key as other variables but has a different name (aka collison).
+    */
     int hash = hash_value(index_str);
-    // This is for temporary variables with a unique hash
+
+    // New variables that doesn't have a hash-key table
     if (table[hash] == NULL)
     {
-        add_to_table(table, index_str, binary_value);
+        table[hash] = malloc(sizeof(TabNode));
+        table[hash]->str = index_str;
+        table[hash]->val = binary_value;
+        table[hash]->next = NULL;
     }
     else
     {
+        // Method can handle duplicate variables and just update their new binary value
         bool found_string = false;
 
         TabNode *temp = table[hash];
@@ -148,10 +170,7 @@ void update_table_by_string(TabNode **table, char *index_str, bool binary_value)
             prev = temp;
             temp = temp->next;
         }
-        /*
-            Suppose a new variable has the same hash of a exisitng variable in the table, then a collison occurs.
-            Hence, we need to add the new variable to the of the chain.
-        */
+        // New variables that share the same hash-key as other variables but has a different name (aka collison)
         if (!found_string)
         {
             prev->next = malloc(sizeof(TabNode));
@@ -188,25 +207,18 @@ int index_table_by_string(TabNode **table, char *index_str)
             }
             temp = temp->next;
         }
-        return -1; // Returns the binary value at the given variable in the table.
+        return -1;
     }
 }
-
 int read_variable(char *read_var, FILE *file_pointer)
 {
     int read_status = fscanf(file_pointer, "%16s", read_var);
     return read_status;
 }
-bool check_current_string_is_part_of_outputs(char **outputs, int num_outputs, char *output)
+int read_number(int *read_var, FILE *file_pointer)
 {
-    for (int i = 0; i < num_outputs; i++)
-    {
-        if (strcmp(outputs[i], output) != 0)
-        {
-            return false;
-        }
-    }
-    return true;
+    int read_status = fscanf(file_pointer, "%16d", read_var);
+    return read_status;
 }
 bool *generate_boolean_permutation(int num_inputs, int row)
 {
@@ -228,7 +240,7 @@ bool *generate_boolean_permutation(int num_inputs, int row)
 }
 int main(int argc, char **argv)
 {
-    int max_size = 16 * 255;                  // since each variable has atmost 16 characters, and the max ascii is 255 then the max hash value can be 255+255+255...+255 = 255 * 16
+    int max_size = 16 * 255; // since each variable has atmost 16 characters, and the max ascii is 255 then the max hash value can be 255+255+255...+255 = 255 * 16
     TabNode **table = create_table(max_size);
 
     // handle file i/o here
@@ -241,22 +253,28 @@ int main(int argc, char **argv)
 
     char input_string[17]; // This will read "INPUT"
     int num_inputs = 0;
+    int num_outputs = 0;
+
     read_variable((char *)&input_string, file_pointer_circuit); // A wrapper function that just runs fscanf in the backend
 
     if (strcmp(input_string, "INPUT") == 0)
     {
-        read_variable(input_string, file_pointer_circuit);
-        num_inputs = atoi(input_string); // reads the number of inputs
+        read_number(&num_inputs, file_pointer_circuit);
     }
-    char **input_strs = (char **)malloc(sizeof(char *) * num_inputs);
-    char **output_strs;
-    int num_outputs = 0;
 
-    int compute_possible_combinations = ((int)pow(2, num_inputs));
+    char **input_strs = (char **)malloc(sizeof(char *) * num_inputs);
+    ;
+    char **output_strs;
+    char *output_variables_or_and = NULL;
+    char *output_variables_not_pass = NULL;
+    char *output_variables_decoder = NULL;
+    char *output_variables_multiplexer = NULL;
+
+    int compute_possible_combinations = ((int)pow(2, num_inputs)); // This is the total number of rows that is going to be printed.
+
     for (int row = 0; row < compute_possible_combinations; row++)
     {
-        bool *binary_perm = generate_boolean_permutation(num_inputs, row); // maybe free?
-
+        bool *binary_perm = generate_boolean_permutation(num_inputs, row);
         // For the first row, fill the table with the input values and it's respective n-bit values and for other rows keep updating the n-bit values.
         for (int j = 0; j < num_inputs; j++)
         {
@@ -271,9 +289,12 @@ int main(int argc, char **argv)
                 update_table_by_string(table, input_strs[j], binary_perm[j]);
             }
         }
+
+        free(binary_perm);
+
         char output_string[17];                                      // This will read "OUTPUT"
         read_variable((char *)&output_string, file_pointer_circuit); // A wrapper function that just runs fscanf in the backend
-        if (strcmp(output_string, "OUTPUT") == 0)
+        if (row == 0 && strcmp(output_string, "OUTPUT") == 0)
         {
             read_variable(output_string, file_pointer_circuit);
             num_outputs = atoi(output_string);                           // reads the number of outputs
@@ -298,7 +319,7 @@ int main(int argc, char **argv)
             if (strcmp(circuit_string, "OR") == 0 || strcmp(circuit_string, "NAND") == 0 || strcmp(circuit_string, "AND") == 0 || strcmp(circuit_string, "NOR") == 0 || strcmp(circuit_string, "XOR") == 0)
             {
                 char **two_input_circuits = (char **)malloc(sizeof(char *) * 2);
-                int biwise_op = 0;
+                int bitwise_op = 0;
                 for (int i = 0; i < 2; i++)
                 {
                     two_input_circuits[i] = (char *)malloc(sizeof(char) * 17);
@@ -313,33 +334,37 @@ int main(int argc, char **argv)
                     int binary_value_int = binary_value == true ? 1 : 0;
                     if (strcmp(circuit_string, "OR") == 0)
                     {
-                        biwise_op = i == 0 ? binary_value_int : binary_value_int | biwise_op;
+                        bitwise_op = i == 0 ? binary_value_int : binary_value_int | bitwise_op;
                     }
                     else if (strcmp(circuit_string, "NAND") == 0)
                     {
-                        biwise_op = i == 0 ? binary_value_int : !(binary_value_int & biwise_op);
+                        bitwise_op = i == 0 ? binary_value_int : !(binary_value_int & bitwise_op);
                     }
                     else if (strcmp(circuit_string, "AND") == 0)
                     {
-                        biwise_op = i == 0 ? binary_value_int : binary_value_int & biwise_op;
+                        bitwise_op = i == 0 ? binary_value_int : binary_value_int & bitwise_op;
                     }
                     else if (strcmp(circuit_string, "NOR") == 0)
                     {
-                        biwise_op = i == 0 ? binary_value_int : !(binary_value_int | biwise_op);
+                        bitwise_op = i == 0 ? binary_value_int : !(binary_value_int | bitwise_op);
                     }
                     else if (strcmp(circuit_string, "XOR") == 0)
                     {
-                        biwise_op = i == 0 ? binary_value_int : binary_value_int ^ biwise_op;
+                        bitwise_op = i == 0 ? binary_value_int : binary_value_int ^ bitwise_op;
                     }
                 }
-                // printf("Updating %s and bitwise op %d\n", circuit_string, biwise_op);
-                char *one_output_circuits = (char *)malloc(sizeof(char) * 17); // free
-
-                read_variable(one_output_circuits, file_pointer_circuit); // reads output variable here
-
-                update_table_by_string(table, one_output_circuits, biwise_op); // updates the output variable's binary value with the correct bitwise_op
-
-                // free(one_output_circuits);
+                if (row == 0)
+                {
+                    output_variables_or_and = (char *)malloc(sizeof(char) * 17);
+                    read_variable(output_variables_or_and, file_pointer_circuit); // reads output variable here
+                    add_to_table(table, output_variables_or_and, bitwise_op);     // updates the output variable's binary value with the correct bitwise_op
+                    update_table_by_string(table, output_variables_or_and, bitwise_op);
+                }
+                else
+                {
+                    read_variable(output_variables_or_and, file_pointer_circuit);
+                    update_table_by_string(table, output_variables_or_and, bitwise_op);
+                }
                 free_char_array(two_input_circuits, 2); // free the input variable array of the circuit instruction.
             }
             else if (strcmp(circuit_string, "NOT") == 0 || strcmp(circuit_string, "PASS") == 0)
@@ -363,13 +388,19 @@ int main(int argc, char **argv)
                 {
                     bitwise_op = binary_value;
                 }
-                char *one_output_circuits = (char *)malloc(sizeof(char) * 17); // free
-                read_variable(one_output_circuits, file_pointer_circuit);
-
-                update_table_by_string(table, one_output_circuits, bitwise_op); // update output variable and it's binary number with bitwise_op
-
+                if (row == 0)
+                {
+                    output_variables_not_pass = (char *)malloc(sizeof(char) * 17);
+                    read_variable(output_variables_not_pass, file_pointer_circuit); // reads output variable here
+                    add_to_table(table, output_variables_not_pass, bitwise_op);     // updates the output variable's binary value with the correct bitwise_op
+                    update_table_by_string(table, output_variables_not_pass, bitwise_op);
+                }
+                else
+                {
+                    read_variable(output_variables_not_pass, file_pointer_circuit);
+                    update_table_by_string(table, output_variables_not_pass, bitwise_op);
+                }
                 free(one_input_circuits);
-                // free(one_output_circuits);
             }
             else if (strcmp(circuit_string, "DECODER") == 0)
             {
@@ -389,25 +420,25 @@ int main(int argc, char **argv)
 
                     free(n_input_circuits[i]);
                 }
+
                 int decoder_output_size = (int)pow(2, decoder_input_size);
-                char **n_output_circuits = (char **)malloc(sizeof(char *) * decoder_output_size);
+
                 for (int j = 0; j < decoder_output_size; j++)
                 {
-                    n_output_circuits[j] = (char *)malloc(sizeof(char) * 17);
-                    read_variable(n_output_circuits[j], file_pointer_circuit);
-
-                    if (j == sum_binary)
+                    bool bitwise_op = j == sum_binary ? true : false;
+                    if (row == 0)
                     {
-                        update_table_by_string(table, n_output_circuits[j], true);
+                        output_variables_decoder = (char *)malloc(sizeof(char) * 17);
+                        read_variable(output_variables_decoder, file_pointer_circuit);
+                        add_to_table(table, output_variables_decoder, bitwise_op);
+                        update_table_by_string(table, output_variables_decoder, bitwise_op);
                     }
                     else
                     {
-                        update_table_by_string(table, n_output_circuits[j], false);
+                        read_variable(output_variables_decoder, file_pointer_circuit);
+                        update_table_by_string(table, output_variables_decoder, bitwise_op);
                     }
-                    // free(n_output_circuits[j]);
                 }
-                
-                // free(n_output_circuits);
                 free(n_input_circuits);
             }
             else if (strcmp(circuit_string, "MULTIPLEXER") == 0)
@@ -436,17 +467,23 @@ int main(int argc, char **argv)
                     base_10_selector_value += (((int)pow(2, j)) * binary_value);
                 }
 
-                // printf("The binary base-10 is %d\n", base_10_selector_value);
-                char *decoder_output_circuits = (char *)malloc(sizeof(char) * 17);
-                read_variable(decoder_output_circuits, file_pointer_circuit);
-
                 int binary_value = index_table_by_string(table, n_input_circuits[base_10_selector_value]);
                 bool binary_rep = binary_value == 1 ? true : false;
-                update_table_by_string(table, decoder_output_circuits, binary_rep); // update output variable and it's binary number with bitwise_op
-            
-                free_char_array(n_input_circuits,multiplexer_input_size);
-                free_char_array(n_selector_circuits, selector_input_size);
+                if (row == 0)
+                {
+                    output_variables_multiplexer = (char *)malloc(sizeof(char) * 17);
+                    read_variable(output_variables_multiplexer, file_pointer_circuit);
+                    add_to_table(table, output_variables_multiplexer, binary_rep);
+                    update_table_by_string(table, output_variables_multiplexer, binary_rep);
+                }
+                else
+                {
+                    read_variable(output_variables_multiplexer, file_pointer_circuit);
+                    update_table_by_string(table, output_variables_multiplexer, binary_rep);
+                }
 
+                free_char_array(n_input_circuits, multiplexer_input_size);
+                free_char_array(n_selector_circuits, selector_input_size);
             }
         }
         for (int n_i = 0; n_i < num_inputs; n_i++)
@@ -468,42 +505,7 @@ int main(int argc, char **argv)
         }
     }
     free_table(table, max_size);
-    free_char_array(input_strs, num_inputs);
-    free_char_array(output_strs, num_outputs);
+
+    free(input_strs);
+    free(output_strs);
 }
-
-// handle circuit output
-// char output_string[17];
-// read_variable((char *)&output_string, file_pointer_circuit);
-// if(strcmp(output_string, "OUTPUT") >=0){
-//     read_variable(output_string, file_pointer_circuit);
-//     int num_inputs = atoi(output_string);
-//     for(int i =0; i < num_inputs;++i){
-//         read_variable(output_string, file_pointer_circuit);
-//         add_to_table(table, output_string);
-//         // int hash_val = hash_value(output_string);
-//         // printf("Output String: %s, Output ascii: %d\n", output_string, hash_val);
-//         // table[hash_val] = false;
-//     }
-// }
-
-// printf("%s\n", directive);
-
-/*
-        Reads: INPUT PR OS 
-        Notice PR Ascii is the same as OS Ascii value of 162
-        So in the table it should be chained together as PR OS
-    */
-//// Bad Code
-// char input_string[17]; // This will read "INPUT"
-// read_variable((char *)&input_string, file_pointer_circuit); // A wrapper function that just runs fscanf in the backend
-
-// if(strcmp(input_string, "INPUT") >=0){
-//     read_variable(input_string, file_pointer_circuit);
-//     int num_inputs = atoi(input_string); // reads the number of inputs
-//     for(int i =0; i < num_inputs; i++){
-//         read_variable(input_string, file_pointer_circuit); // reads the single string into the input_strs[i]
-//         add_to_table(table, input_string); // add input_strs[i] to the main hash table.
-//     }
-// }
-// print_list(table[162]); // Prints OS OS
