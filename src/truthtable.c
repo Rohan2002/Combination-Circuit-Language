@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <math.h>
 
 struct TableNode
 {
@@ -133,7 +132,7 @@ void update_table_by_string(TabNode **table, char *index_str, bool binary_value)
         Since add_to_table is called before update, we can assume that all variables in the file exist in the table.
 
         Hence then we could can compare a variable at its hash by going through the linked list, and once we find
-        the correct string then we can just update that node's binary_val value. 
+        the correct string then we can just update that node's binary_val value.
     */
     int hash = hash_value(index_str);
 
@@ -243,7 +242,7 @@ int main(int argc, char **argv)
     char *output_variables_decoder = NULL;
     char *output_variables_multiplexer = NULL;
 
-    int compute_possible_combinations = ((int)pow(2, num_inputs)); // This is the total number of rows that is going to be printed.
+    int compute_possible_combinations = 1 << num_inputs; // This is the total number of rows that is going to be printed.
 
     for (int row = 0; row < compute_possible_combinations; row++)
     {
@@ -389,12 +388,12 @@ int main(int argc, char **argv)
 
                     read_variable(n_input_circuits[i], file_pointer_circuit);
                     int binary_value = index_table_by_string(table, n_input_circuits[i]);
-                    sum_binary += (((int)pow(2, i)) * binary_value);
+                    sum_binary += ((1 << i) * binary_value);
 
                     free(n_input_circuits[i]);
                 }
 
-                int decoder_output_size = (int)pow(2, decoder_input_size);
+                int decoder_output_size = 1 << decoder_input_size;
 
                 for (int j = 0; j < decoder_output_size; j++)
                 {
@@ -420,7 +419,7 @@ int main(int argc, char **argv)
                 read_variable(string_multiplexer_selector_length, file_pointer_circuit);
 
                 int selector_input_size = atoi(string_multiplexer_selector_length);
-                int multiplexer_input_size = (int)pow(2, selector_input_size);
+                int multiplexer_input_size = 1 << selector_input_size;
 
                 char **n_input_circuits = (char **)malloc(sizeof(char *) * multiplexer_input_size);
                 char **n_selector_circuits = (char **)malloc(sizeof(char *) * selector_input_size);
@@ -437,7 +436,7 @@ int main(int argc, char **argv)
                     read_variable(n_selector_circuits[j], file_pointer_circuit);
 
                     int binary_value = index_table_by_string(table, n_selector_circuits[j]);
-                    base_10_selector_value += (((int)pow(2, j)) * binary_value);
+                    base_10_selector_value += ((1 << j) * binary_value);
                 }
 
                 int binary_value = index_table_by_string(table, n_input_circuits[base_10_selector_value]);
@@ -476,11 +475,9 @@ int main(int argc, char **argv)
             printf("%s\n", "Couldn't read the file at the given location!");
             return EXIT_FAILURE;
         }
-        
     }
     free_table(table, max_size);
 
-    
     free(input_strs);
     free(output_strs);
 }
