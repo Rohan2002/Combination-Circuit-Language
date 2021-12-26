@@ -2,7 +2,7 @@
     Author: Rohan Deshpande
     Date: November 25, 2021
 
-    Digital Logic Lab
+    Combinational-Circuit-Language
 */
 
 #include <stdio.h>
