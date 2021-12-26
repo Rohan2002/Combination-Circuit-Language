@@ -16,7 +16,7 @@ MULTIPLEXER 2   0 1 0 1                           temp5 temp6               OUT1
 ```
 
 Query 1 will be read from top to bottom. All Input(s), Output(s), and Circuit Instructions and variables will be read, parsed, and applied to return a truth table. 
-For Query 1 particularly, this language will generate 20 input bit combination, pass it through the Multiplexer circuit instructions, and generate 1 output. Therefore there will be 2^20 possible combinations of the input bits, and thus there will be 2^20 possible types of outputs generated from this particular query. 
+For Query 1 particularly, this language will generate a 20 input bit combination, pass it through the Multiplexer circuit instructions, and generate 1 output. Therefore there will be 2^20 possible combinations of the input bits, and thus there will be 2^20 possible types of outputs generated from this particular query. 
 
 # Project Credits
 
